@@ -21,7 +21,7 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 5173,
         hmr: {
-            host: 'localhost',
+            host: '10.78.9.3',
         },
         watch: {
             usePolling: true, // Иногда нужно для Windows/WSL, чтобы авто-обновление работало
