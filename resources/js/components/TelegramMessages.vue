@@ -1,86 +1,80 @@
 <template>
-    <div class="p-6">
-        <!-- Форма (добавлена сверху) -->
-        <div class="mb-8 p-4 border rounded shadow-sm">
-            <input v-model="chatId" type="text" placeholder="ID чата" class="border p-2 mb-2 w-full rounded">
-            <textarea v-model="newMessage" placeholder="Ваше сообщение..." class="border p-2 w-full rounded"></textarea>
-            <button @click="sendMessage" :disabled="sending" class="mt-2 bg-green-500 text-white px-4 py-2 rounded">
-                {{ sending ? 'Отправка...' : 'Отправить' }}
+    <!-- Добавлен max-w-xl для десктопа и min-h-screen для общего фона -->
+    <div class="p-3 md:p-6 max-w-2xl mx-auto min-h-screen bg-white">
+        
+        <!-- Форма: убрали лишние отступы на мобилках -->
+        <div class="mb-6 p-4 border rounded-lg shadow-sm bg-gray-50">
+            <h2 class="text-sm font-semibold mb-3 text-gray-500 uppercase">Отправить ответ</h2>
+            
+            <input 
+                v-model="chatId" 
+                type="text" 
+                placeholder="ID чата" 
+                class="border p-3 mb-3 w-full rounded-md focus:ring-2 focus:ring-green-400 outline-none transition-all"
+            >
+            
+            <textarea 
+                v-model="newMessage" 
+                rows="3"
+                placeholder="Ваше сообщение..." 
+                class="border p-3 w-full rounded-md focus:ring-2 focus:ring-green-400 outline-none transition-all"
+            ></textarea>
+            
+            <!-- Кнопка на мобильных устройствах теперь во всю ширину -->
+            <button 
+                @click="sendMessage" 
+                :disabled="sending" 
+                class="mt-3 w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-3 rounded-md transition-colors disabled:opacity-50"
+            >
+                {{ sending ? 'Отправка...' : 'Отправить сообщение' }}
             </button>
         </div>
 
-        <h1 class="text-2xl font-bold mb-4">Сообщения из Telegram:</h1>
+        <h1 class="text-xl md:text-2xl font-bold mb-4 px-1">Сообщения:</h1>
 
-        <div v-if="isLocal" class="text-orange-500 mb-2 text-sm italic">
-            ⚠️ Telegram недоступен. Показаны данные из базы.
+        <!-- Статус доступа -->
+        <div v-if="isLocal" class="mx-1 p-2 bg-orange-50 border border-orange-200 rounded text-orange-700 mb-4 text-xs italic flex items-center">
+            <span class="mr-2">⚠️</span> Telegram недоступен. Данные из базы.
         </div>
 
-        <div v-if="loading" class="text-gray-500">Загрузка данных...</div>
+        <div v-if="loading" class="text-center py-10 text-gray-500">
+            <div class="animate-pulse">Загрузка данных...</div>
+        </div>
 
-        <ul v-else-if="messages.length > 0" class="space-y-2">
+        <!-- Список сообщений: увеличены отступы для удобного тапа -->
+        <ul v-else-if="messages.length > 0" class="space-y-3">
             <li v-for="item in messages" :key="item.id" 
                 @click="chatId = item.chat_id"
-                class="border-b pb-2 cursor-pointer hover:bg-gray-50">
+                class="p-3 border rounded-lg active:bg-gray-100 md:hover:bg-gray-50 transition-colors cursor-pointer relative overflow-hidden"
+                :class="item.is_outbound ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-blue-500'"
+            >
+                <div class="flex justify-between items-start mb-1">
+                    <span :class="item.is_outbound ? 'text-green-700' : 'text-blue-700'" class="font-bold text-sm">
+                        {{ item.user_name }}
+                    </span>
+                    <span v-if="isLocal" class="text-[9px] uppercase tracking-wider text-gray-400 font-mono">DB ONLY</span>
+                </div>
                 
-                <span :class="item.is_outbound ? 'text-green-600' : 'text-black'" class="font-semibold">
-                    {{ item.user_name }}:
-                </span>
-                <span class="ml-2 text-gray-700">{{ item.text || '[Нет текста]' }}</span>
+                <p class="text-gray-800 leading-relaxed break-words">
+                    {{ item.text || '[Пустое сообщение]' }}
+                </p>
                 
-                <!-- Метка локальности -->
-                <span v-if="isLocal" class="ml-2 text-[10px] text-gray-400 border px-1">сохранено локально</span>
+                <div class="text-[10px] text-gray-400 mt-2">
+                    ID: {{ item.chat_id }}
+                </div>
             </li>
         </ul>
 
-        <div v-else class="text-red-500">Сообщений нет.</div>
+        <div v-else class="text-center py-10 text-red-500 border-2 border-dashed rounded-xl">
+            Сообщений пока нет.
+        </div>
 
-        <button @click="fetchMessages" class="mt-6 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow">
-            Обновить вручную
+        <!-- Нижняя кнопка обновления -->
+        <button 
+            @click="fetchMessages" 
+            class="mt-8 mb-10 w-full md:w-auto block mx-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold px-8 py-3 rounded-full shadow-lg active:scale-95 transition-transform"
+        >
+            🔄 Обновить чаты
         </button>
     </div>
 </template>
-
-<script setup>
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
-
-const messages = ref([]);
-const loading = ref(true);
-const isLocal = ref(false);
-const newMessage = ref('');
-const chatId = ref('');
-const sending = ref(false);
-
-const fetchMessages = async () => {
-    loading.value = true;
-    try {
-        const response = await axios.get('/telegram-messages');
-        // Принимаем новый формат данных из контроллера
-        messages.value = response.data.messages;
-        isLocal.value = response.data.is_local;
-    } catch (error) {
-        console.error("Ошибка при загрузке:", error);
-    } finally {
-        loading.value = false;
-    }
-};
-
-const sendMessage = async () => {
-    if (!newMessage.value || !chatId.value) return;
-    sending.value = true;
-    try {
-        await axios.post('/send-message', {
-            chat_id: chatId.value,
-            text: newMessage.value
-        });
-        newMessage.value = '';
-        fetchMessages(); // Сразу обновляем список
-    } catch (e) {
-        alert('Ошибка при отправке');
-    } finally {
-        sending.value = false;
-    }
-};
-
-onMounted(fetchMessages);
-</script>
