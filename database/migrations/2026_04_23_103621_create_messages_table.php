@@ -19,6 +19,7 @@ public function up(): void
         $table->text('text');
         $table->boolean('is_outbound')->default(false); // Исходящее или входящее
         $table->timestamps();
+	$table->unsignedBigInteger('telegram_date')->nullable(); // Unix timestamp из Telegram
     });
 }
 
