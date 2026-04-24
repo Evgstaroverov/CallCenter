@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
-import vue from '@vitejs/plugin-vue'; // Добавили эту строку
+import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
     plugins: [
@@ -9,24 +9,23 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.js'],
             refresh: true,
         }),
-
- 	vue(), // И добавили эту строку
-
+        vue(),
         tailwindcss(),
     ],
-
-
-    resolve: { // Добавь этот блок
+    resolve: {
         alias: {
             'vue': 'vue/dist/vue.esm-bundler.js',
         },
     },
-
-
     server: {
         host: '0.0.0.0',
+        port: 5173,
         hmr: {
             host: 'localhost',
+        },
+        watch: {
+            usePolling: true, // Иногда нужно для Windows/WSL, чтобы авто-обновление работало
+            ignored: ['**/storage/framework/views/**'],
         },
     },
 });
