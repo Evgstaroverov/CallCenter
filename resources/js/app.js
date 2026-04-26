@@ -1,14 +1,10 @@
-//
-import './bootstrap.js';
+
+
+import './bootstrap';
 import { createApp } from 'vue';
-import TelegramMessages from './components/TelegramMessages.vue';
+import App from './App.vue';
+import router from './router';
 
-
-const app = createApp({
-    components: {
-        'telegram-messages': TelegramMessages
-    }
-});
-
-app.component('telegram-messages', TelegramMessages);
+const app = createApp(App);
+app.use(router);
 app.mount('#app');
