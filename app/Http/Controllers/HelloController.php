@@ -17,6 +17,9 @@ class HelloController extends Controller
         return view('app');
     }
 
+
+
+
     // Загрузка сообщений из Telegram API
     private function fetchUpdatesFromTelegram()
     {
@@ -26,7 +29,7 @@ class HelloController extends Controller
             
             if ($response->successful()) {
                 $updates = $response->json()['result'] ?? [];
-                
+
                 foreach ($updates as $update) {
                     if (isset($update['message'])) {
                         Message::updateOrCreate(

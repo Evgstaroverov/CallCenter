@@ -11,6 +11,19 @@ Route::post('/login', [AuthController::class, 'apiLogin']);
 Route::post('/register', [AuthController::class, 'apiRegister']);
 
 
+Route::get('/tg-check', function () {
+    $token = config('services.telegram.bot_token');
+    $response = Http::timeout(3)->get("https://api.telegram.org/bot{$token}/getUpdates");
+    
+    if ($response->successful()) {
+        $updates = $response->json()['result'] ?? [];
+        dd($updates); // Выведет данные на экран и остановит работу
+    }
+
+    return "Ошибка запроса к Telegram";
+});
+
+
 // Защищенные маршруты
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'apiLogout']);
