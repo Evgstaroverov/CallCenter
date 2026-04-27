@@ -1,10 +1,19 @@
 <?php
 
+use Illuminate\Support\Carbon;
+
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HelloController;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\TelegramController;
+
+//use App\Models\TelegraphBot;
+
+use DefStudio\Telegraph\Models\TelegraphBot;
+
+use App\Models\Message;
+
 
 // Публичные маршруты
 Route::post('/login', [AuthController::class, 'apiLogin']);
@@ -12,15 +21,31 @@ Route::post('/register', [AuthController::class, 'apiRegister']);
 
 
 Route::get('/tg-check', function () {
-    $token = config('services.telegram.bot_token');
-    $response = Http::timeout(3)->get("https://api.telegram.org/bot{$token}/getUpdates");
-    
-    if ($response->successful()) {
-        $updates = $response->json()['result'] ?? [];
-        dd($updates); // Выведет данные на экран и остановит работу
-    }
 
-    return "Ошибка запроса к Telegram";
+            $token = config('services.telegram.bot_token');
+
+            $bot = TelegraphBot::where('token', $token)->first();
+            $updates = $bot->updates()->toArray();
+
+            foreach ($updates as $update) {
+                if (isset($update['message'])) {
+                    Message::updateOrCreate(
+                        ['telegram_update_id' => $update['id']],
+                        [
+                            'chat_id' => $update['message']['chat']['id'],
+                            'user_name' => $update['message']['from']['first_name'] ?? 'Anon',
+                            'text' => $update['message']['text'] ?? '',
+                            'is_outbound' => false,
+                            'telegram_date' => Carbon::parse(Carbon::parse($update['message']['date'])->toDateTimeString())->timestamp ?? null
+                        ]
+                    );
+                }
+            }
+
+
+
+
+
 });
 
 

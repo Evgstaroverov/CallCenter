@@ -6,7 +6,7 @@
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
                         <router-link to="/chats" class="text-xl font-bold text-gray-900">
-                            Telegram Чаты
+                            Чаты оператора колл-центра
                         </router-link>
                     </div>
                     <div class="flex items-center space-x-4">
@@ -63,7 +63,6 @@
 
             <h2 class="text-lg sm:text-xl font-bold mb-4">
                 Чат ID: {{ chatId }}
-                <span v-if="isAutoRefresh" class="text-xs text-gray-400 ml-2">(автообновление)</span>
             </h2>
 
             <!-- Форма отправки (только если чат свободен или назначен пользователю) -->
@@ -95,10 +94,6 @@
                             </span>
                             <span class="text-gray-700 break-words">{{ item.text || '[Нет текста]' }}</span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="text-xs text-gray-400">📅 {{ item.formatted_date }}</span>
-                            <span class="text-xs text-gray-400 italic">({{ item.relative_time }})</span>
-                        </div>
                     </div>
                 </li>
             </ul>
@@ -109,11 +104,6 @@
                 <button @click="fetchMessages" 
                     class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow text-sm sm:text-base">
                     Обновить сообщения
-                </button>
-                <button @click="toggleAutoRefresh" 
-                    :class="isAutoRefresh ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-500 hover:bg-gray-600'"
-                    class="text-white px-4 py-2 rounded shadow text-sm sm:text-base">
-                    {{ isAutoRefresh ? '⏸ Остановить автообновление' : '▶ Включить автообновление' }}
                 </button>
             </div>
         </div>
@@ -141,7 +131,6 @@ const loadingMessages = ref(false)
 const newMessage = ref('')
 const sending = ref(false)
 const assigning = ref(false)
-const isAutoRefresh = ref(true) // По умолчанию автообновление включено
 let refreshInterval = null
 
 const chatInfo = ref({
@@ -178,22 +167,12 @@ const fetchMessages = async () => {
     }
 }
 
-// Включение/выключение автообновления
-const toggleAutoRefresh = () => {
-    isAutoRefresh.value = !isAutoRefresh.value
-    if (isAutoRefresh.value) {
-        startAutoRefresh()
-    } else {
-        stopAutoRefresh()
-    }
-}
-
 // Запуск автообновления
 const startAutoRefresh = () => {
-    stopAutoRefresh() // Очищаем предыдущий интервал если есть
+    stopAutoRefresh()
     refreshInterval = setInterval(() => {
         fetchMessages()
-    }, 5000) // 5 секунд
+    }, 5000)
 }
 
 // Остановка автообновления
@@ -262,7 +241,7 @@ const sendMessage = async () => {
 
 // Выход из системы
 const handleLogout = async () => {
-    stopAutoRefresh() // Очищаем интервал перед выходом
+    stopAutoRefresh()
     await auth.logout()
     router.push('/login')
 }
@@ -281,11 +260,10 @@ const markAsViewed = () => {
 
 onMounted(() => {
     fetchMessages()
-    startAutoRefresh() // Запускаем автообновление при монтировании
+    startAutoRefresh()
     markAsViewed()
 })
 
-// Очищаем интервал при размонтировании компонента
 onUnmounted(() => {
     stopAutoRefresh()
 })

@@ -9,8 +9,15 @@ use App\Models\ChatAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
+use DefStudio\Telegraph\Models\TelegraphBot;
+use DefStudio\Telegraph\Facades\Telegraph;
+
+use Illuminate\Support\Carbon;
+
 class HelloController extends Controller
 {
+
+
     // Показать главную страницу
     public function index()
     {
@@ -19,40 +26,38 @@ class HelloController extends Controller
 
 
 
-
     // Загрузка сообщений из Telegram API
     private function fetchUpdatesFromTelegram()
     {
         try {
             $token = config('services.telegram.bot_token');
-            $response = Http::timeout(3)->get("https://api.telegram.org/bot{$token}/getUpdates");
-            
-            if ($response->successful()) {
-                $updates = $response->json()['result'] ?? [];
 
-                foreach ($updates as $update) {
-                    if (isset($update['message'])) {
-                        Message::updateOrCreate(
-                            ['telegram_update_id' => $update['update_id']],
-                            [
-                                'chat_id' => $update['message']['chat']['id'],
-                                'user_name' => $update['message']['from']['first_name'] ?? 'Anon',
-                                'text' => $update['message']['text'] ?? '',
-                                'is_outbound' => false,
-                                'telegram_date' => $update['message']['date'] ?? null
-                            ]
-                        );
-                    }
+            $bot = TelegraphBot::where('token', $token)->first();
+            $updates = $bot->updates()->toArray();
+
+            foreach ($updates as $update) {
+                if (isset($update['message'])) {
+                    Message::updateOrCreate(
+                        ['telegram_update_id' => $update['id']],
+                        [
+                            'chat_id' => $update['message']['chat']['id'],
+                            'user_name' => $update['message']['from']['first_name'] ?? 'Anon',
+                            'text' => $update['message']['text'] ?? '',
+                            'is_outbound' => false,
+                            'telegram_date' => Carbon::parse(Carbon::parse($update['message']['date'])->toDateTimeString())->timestamp ?? null
+                        ]
+                    );
                 }
-                
-                return true;
             }
+	return true;
+
+
         } catch (\Exception $e) {
             // Логируем ошибку если нужно
+            return false;
         }
-        
-        return false;
     }
+
 
     // Получить список чатов (с учетом назначений)
     public function getChats()
@@ -264,7 +269,6 @@ class HelloController extends Controller
             ]);
         }
 
-        $token = config('services.telegram.bot_token');
         
         $localMsg = Message::create([
             'chat_id' => $chatId,
@@ -274,10 +278,13 @@ class HelloController extends Controller
         ]);
 
         try {
-             Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
-                'chat_id' => $request->chat_id,
-                'text' => $request->text,
-            ]);
+
+
+	Telegraph::chat($request->chat_id)
+  	  ->message($request->text)
+  	  ->send();
+
+
         } catch (\Exception $e) {
             // Оставляем в базе
         }

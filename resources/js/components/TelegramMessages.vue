@@ -2,7 +2,7 @@
 
 
     <div class="p-4 sm:p-6">
-        <h1 class="text-xl sm:text-2xl font-bold mb-4">Чаты Telegram:</h1>
+        <h1 class="text-xl sm:text-2xl font-bold mb-4">Чаты опеатора колл-центра:</h1>
 
         <!-- Список чатов -->
         <div v-if="!selectedChat" class="space-y-3">
